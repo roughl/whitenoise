@@ -13,6 +13,14 @@ int beenden=0; //Program flow
 unsigned int generateSeed();
 void catcher(int sigtype);
 
+void die(int retval)
+{
+	fprintf(stderr, "usage:\t./whitenoise");
+	fprintf(stderr, "\t./whitenoise amountoffolders");
+	fprintf(stderr, "\t./whitenoise amountoffolders width height");
+	exit(retval);
+}
+
 int main(int argc, char* args[])
 {
 	unsigned int surfaceWidth = 2048;
@@ -30,12 +38,9 @@ int main(int argc, char* args[])
 	srand(generateSeed());
 
 	if((argc != 1) && (argc != 2) && (argc != 4))
-		{
-			printf("usage:\t./whitenoise");
-			printf("\t./whitenoise amountoffolders");
-			printf("\t./whitenoise amountoffolders width height");
-			return 1;
-		}
+	{
+		die(1);
+	}
 	if(argc == 2)
 	{
 		try
@@ -44,11 +49,8 @@ int main(int argc, char* args[])
 		}
 		catch(boost::bad_lexical_cast&)
 		{
-			printf("Foldernumber parameter needs to be numeric!");
-			printf("usage:\t./whitenoise");
-			printf("\t./whitenoise amountoffolders");
-			printf("\t./whitenoise amountoffolders width height");
-			return 1;
+			fprintf(stderr, "Foldernumber parameter needs to be numeric!");
+			die(1);
 		}
 	}
 	if(argc == 4)
@@ -61,11 +63,8 @@ int main(int argc, char* args[])
 		}
 		catch(boost::bad_lexical_cast&)
 		{
-			printf("Width and height parameters needs to be numeric!");
-			printf("usage:\t./whitenoise");
-			printf("\t./whitenoise amountoffolders");
-			printf("\t./whitenoise amountoffolders width height");
-			return 1;
+			fprintf(stderr, "Width and height parameters needs to be numeric!");
+			die(1);
 		}
 	}
 
