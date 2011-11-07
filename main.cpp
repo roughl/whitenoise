@@ -1,0 +1,143 @@
+#include "SDL/SDL.h"
+#include "SDL/SDL_image.h"
+#include <string>
+#include <fstream> //read the urandom and random device
+#include <boost/lexical_cast.hpp> //convert number to string
+#include <sys/stat.h> //for create directory
+#include <signal.h> //for ctrl+c to abort
+ 
+using namespace std;
+
+int SCREEN_WIDTH = 2048;
+int SCREEN_HEIGHT = 2048;
+int FOLDER_NUMBER = 4;
+const int SCREEN_BPP = 24;
+
+int beenden=0; //Program flow
+
+unsigned int generateSeed();
+void catcher(int sigtype);
+
+int main(int argc, char* args[])
+{
+	SDL_Surface *surface = NULL;
+	unsigned int i,j,k;
+	char foldername[32];
+	char filename[32];
+	Uint32 *ptr;
+
+	signal(SIGINT, catcher);
+	srand(generateSeed());
+
+	if((argc != 1) && (argc != 2) && (argc != 4))
+		{
+			printf("usage:\t./whitenoise");
+			printf("\t./whitenoise amountoffolders");
+			printf("\t./whitenoise amountoffolders width height");
+			return 1;
+		}
+	if(argc == 2)
+	{
+		try
+		{
+			FOLDER_NUMBER = boost::lexical_cast<int>(args[1]);
+		}
+		catch(boost::bad_lexical_cast&)
+		{
+			printf("Foldernumber parameter needs to be numeric!");
+			printf("usage:\t./whitenoise");
+			printf("\t./whitenoise amountoffolders");
+			printf("\t./whitenoise amountoffolders width height");
+			return 1;
+		}
+	}
+	if(argc == 4)
+	{
+		try
+		{
+			FOLDER_NUMBER = boost::lexical_cast<int>(args[1]);
+			SCREEN_WIDTH = boost::lexical_cast<int>(args[2]);
+			SCREEN_HEIGHT = boost::lexical_cast<int>(args[3]);
+		}
+		catch(boost::bad_lexical_cast&)
+		{
+			printf("Width and height parameters needs to be numeric!");
+			printf("usage:\t./whitenoise");
+			printf("\t./whitenoise amountoffolders");
+			printf("\t./whitenoise amountoffolders width height");
+			return 1;
+		}
+	}
+
+	if(SDL_Init(SDL_INIT_EVERYTHING) == -1)
+		return -1;
+	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_BPP, 0xFF0000, 0x00FF00, 0x0000FF, 0);
+	if (SDL_MUSTLOCK(surface))
+		SDL_LockSurface(surface);
+
+
+	mkdir("output",0755);
+	chdir("output");
+	for(i=0; i<FOLDER_NUMBER; i++)
+	{
+		sprintf(foldername,"%.3d",i);
+		mkdir(foldername,0755);
+		for(j=0; j<200; j++)
+		{
+			ptr = (Uint32 *)surface->pixels;
+			for(k=0; k<SCREEN_HEIGHT*surface->pitch/4; k++)
+				ptr[k] = rand();
+			sprintf(filename,"%.3d/%.3d.bmp",i,j);
+			SDL_SaveBMP(surface, filename);
+			if (beenden==1)
+				break;
+		}
+		if (beenden==1)
+			break;
+	}
+
+
+	if (SDL_MUSTLOCK(surface))
+		SDL_UnlockSurface(surface);
+	SDL_FreeSurface(surface);
+	SDL_Quit();
+	return 0;
+}
+
+unsigned int generateSeed()
+{
+	unsigned int seed, seedX, seedY, seedZ; 
+	seedX = 0;
+	seedY = 0;
+	seedZ = std::time(0);
+
+	char * tmp;
+	int size = sizeof(int);
+	tmp = new char[size];
+
+	ifstream file1("/dev/urandom", ios::binary);
+	if(file1.is_open())
+	{
+		file1.read(tmp, size);
+		file1.close();
+		seedX = *reinterpret_cast<int*>(tmp);
+	}
+
+	ifstream file2("/dev/random", ios::binary);
+	if(file2.is_open())
+	{
+		file2.read(tmp, size);
+		file2.close();
+		seedY = *reinterpret_cast<int*>(tmp);
+	}
+
+	delete[] tmp;
+	seed = seedX xor seedY xor seedZ;
+//	cout << "seed:" << seed << " seedX:" << seedX << " seedY:" << seedY << " seedZ:" << seedZ << endl;
+	return seed;
+}
+
+void catcher(int sigtype)
+{
+	  beenden=1;
+}

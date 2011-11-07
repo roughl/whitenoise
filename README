@@ -1,0 +1,25 @@
+README
+This Readme is about the whitenoise-pictures-generation-tool by Lucien Buchmann
+
+INPUT (not yet implemented)
+- dimensions width and height to set the filesize
+
+OUTPUTFILES
+tmp.bmp
+
+MAYBE INTERESTING
+- start the program from console if possible, so you can read the error-messages
+
+USAGE
+./whitenoise
+./whitenoise x y
+./whitenoise 200 300
+and then:
+./convert.sh
+
+NEEDED PACKAGES
+ubuntu example: sudo apt-get install libsdl1.2-dev libsdl-image1.2-dev libboost-dev
+
+COMPILE
+./m
+
