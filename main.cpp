@@ -1,35 +1,22 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_image.h"
 #include <string>
+#include <iostream>
 #include <fstream> //read the urandom and random device
-#include <boost/lexical_cast.hpp> //convert number to string
+#include <time.h> //use the "second" as seed generator if the random devices do fail
 #include <sys/stat.h> //for create directory
 #include <signal.h> //for ctrl+c to abort
+#include <tclap/CmdLine.h>
  
-using namespace std;
-
-int beenden=0; //Program flow
+int beenden = 0; //Program flow
 
 unsigned int generateSeed();
 void catcher(int sigtype);
 
-void die(int retval)
-{
-	fprintf(stderr, "usage:\t./whitenoise");
-	fprintf(stderr, "\t./whitenoise amountoffolders");
-	fprintf(stderr, "\t./whitenoise amountoffolders width height");
-	exit(retval);
-}
-
 int main(int argc, char* args[])
 {
-	unsigned int surfaceWidth = 2048;
-	unsigned int surfaceHeight = 2048;
-	unsigned int folderNumber = 4;
-	const int SCREEN_BPP = 24;
-
+	unsigned int surfaceWidth, surfaceHeight, folderNumber, i,j,k;
 	SDL_Surface *surface = NULL;
-	unsigned int i,j,k;
 	char foldername[32];
 	char filename[32];
 	Uint32 *ptr;
@@ -37,40 +24,36 @@ int main(int argc, char* args[])
 	signal(SIGINT, catcher);
 	srand(generateSeed());
 
-	if((argc != 1) && (argc != 2) && (argc != 4))
+	try
 	{
-		die(1);
-	}
-	if(argc == 2)
+		TCLAP::CmdLine cmd("Lustige Programmbeschreibung", ' ', "0.1");
+		TCLAP::ValueArg<unsigned int> widthArg("w", "width", "width in pixels", false, 256, "unsigned int");
+		TCLAP::ValueArg<unsigned int> heightArg("i", "height", "height in pixels", false, 256, "unsigned int");
+		TCLAP::ValueArg<unsigned int> foldersArg("n", "amount", "Amount of folder you'd like to fill", false, 1, "unsigned int");
+		/*TODO: parameter "i" should be "h", but then the tool doesn't work, at least under ubuntu...
+			./whitenoise outputs:
+				I don't understand Argument: -h <unsigned int>,  --height <unsigned int>.
+				Argument with same flag/name already exists!
+			The Guy who fixes the bug earns a cookie!*/
+
+		cmd.add(widthArg);
+		cmd.add(heightArg);
+		cmd.add(foldersArg);
+
+		cmd.parse(argc, args);
+		surfaceWidth = widthArg.getValue();
+		surfaceHeight = heightArg.getValue();
+		folderNumber = foldersArg.getValue();
+		}
+	catch (TCLAP::ArgException & e)
 	{
-		try
-		{
-			folderNumber = boost::lexical_cast<int>(args[1]);
-		}
-		catch(boost::bad_lexical_cast&)
-		{
-			fprintf(stderr, "Foldernumber parameter needs to be numeric!");
-			die(1);
-		}
-	}
-	if(argc == 4)
-	{
-		try
-		{
-			folderNumber = boost::lexical_cast<int>(args[1]);
-			surfaceWidth = boost::lexical_cast<int>(args[2]);
-			surfaceHeight = boost::lexical_cast<int>(args[3]);
-		}
-		catch(boost::bad_lexical_cast&)
-		{
-			fprintf(stderr, "Width and height parameters needs to be numeric!");
-			die(1);
-		}
+		std::cerr << "I don't understand " << e.argId() << ".\n" << e.error() << std::endl;
+		return -1;
 	}
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) == -1)
 		return -1;
-	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, surfaceWidth, surfaceHeight, SCREEN_BPP, 0xFF0000, 0x00FF00, 0x0000FF, 0);
+	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, surfaceWidth, surfaceHeight, 24, 0xFF0000, 0x00FF00, 0x0000FF, 0);
 	if (SDL_MUSTLOCK(surface))
 		SDL_LockSurface(surface);
 
@@ -108,12 +91,13 @@ unsigned int generateSeed()
 	unsigned int seed, seedX, seedY, seedZ; 
 	seedX = 0;
 	seedY = 0;
-	seedZ = std::time(0);
+	seedZ = time(0);
 
 	char * tmp;
 	int size = sizeof(int);
 	tmp = new char[size];
 
+	using namespace std;
 	ifstream file1("/dev/urandom", ios::binary);
 	if(file1.is_open())
 	{
