@@ -9,10 +9,10 @@ MAYBE INTERESTING
 
 USAGE
 ./whitenoise
-./whitenoise -w 200 -h 100 -n 2
-w: width
-h: height
-n: amount of folders
+./whitenoise -x 200 -y 100 -n 2
+x: width (default: 960)
+y: height (default: 960)
+n: amount of folders (default: 1)
 
 and then:
 ./convert.sh

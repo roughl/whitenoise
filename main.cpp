@@ -27,14 +27,9 @@ int main(int argc, char* args[])
 	try
 	{
 		TCLAP::CmdLine cmd("Lustige Programmbeschreibung", ' ', "0.1");
-		TCLAP::ValueArg<unsigned int> widthArg("w", "width", "width in pixels", false, 256, "unsigned int");
-		TCLAP::ValueArg<unsigned int> heightArg("i", "height", "height in pixels", false, 256, "unsigned int");
+		TCLAP::ValueArg<unsigned int> widthArg("x", "width", "Width in pixels", false, 960, "unsigned int");
+		TCLAP::ValueArg<unsigned int> heightArg("y", "height", "Height in pixels", false, 960, "unsigned int");
 		TCLAP::ValueArg<unsigned int> foldersArg("n", "amount", "Amount of folder you'd like to fill", false, 1, "unsigned int");
-		/*TODO: parameter "i" should be "h", but then the tool doesn't work, at least under ubuntu...
-			./whitenoise outputs:
-				I don't understand Argument: -h <unsigned int>,  --height <unsigned int>.
-				Argument with same flag/name already exists!
-			The Guy who fixes the bug earns a cookie!*/
 
 		cmd.add(widthArg);
 		cmd.add(heightArg);
