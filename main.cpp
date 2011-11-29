@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream> //read the urandom and random device
+#include <cmath>
 #include <time.h> //use the "second" as seed generator if the random devices do fail
 #include <sys/stat.h> //for create directory
 #include <signal.h> //for ctrl+c to abort
@@ -24,7 +25,6 @@ int main(int argc, char* args[])
 	char foldername[32];
 	char filename[32];
 	string compression;
-	Uint32 *ptr;
 
 	signal(SIGINT, catcher);
 	srand(generateSeed());
@@ -72,9 +72,11 @@ int main(int argc, char* args[])
 		mkdir(foldername,0755);
 		for(unsigned int j=0; j<200; j++)
 		{
-			ptr = (Uint32 *)surface->pixels;
-			for(unsigned int k=0; k<surfaceHeight*surface->pitch/4; k++)
-				ptr[k] = rand();
+			Uint8 *ptr;
+			ptr = (Uint8 *)surface->pixels;
+			for(unsigned int k=0; k<surfaceHeight*surface->pitch; k++) {
+				ptr[k] = rand()*255.0/RAND_MAX;
+			}
 			
 			sprintf(filename,"%.3d/%.3d.%s",i,j,compression.c_str());
 			if(compression == "bmp")
