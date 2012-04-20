@@ -10,12 +10,29 @@
 #include <signal.h> //for ctrl+c to abort
 #include <tclap/CmdLine.h>
 #include <jpeglib.h>
+#include <noise/noise.h>
+#include <unistd.h>
+using namespace noise;
  
 int beenden = 0; //Program flow
 
 unsigned int generateSeed();
 void catcher(int sigtype);
 bool write_jpeg_file( char *filename, unsigned int width, unsigned int height, unsigned char* data );
+
+Uint32 getNoise(int x, int y, int type)
+{
+	switch(type) {
+		case 0:
+			return rand();
+		case 1:
+			module::Perlin myModule;
+			double value = myModule.GetValue (1.25, 0.75, 0.50);
+			return (Uint32)((value+1)/2.0*0xFFFFFFFF);
+		default:
+			return rand();
+	}
+}
 
 int main(int argc, char* args[])
 {
@@ -34,14 +51,23 @@ int main(int argc, char* args[])
 		TCLAP::CmdLine cmd("Creates pictures with random content", ' ', "0.1");
 		TCLAP::ValueArg<unsigned int> widthArg("x", "width", "Width in pixels", false, 960, "unsigned int");
 		TCLAP::ValueArg<unsigned int> heightArg("y", "height", "Height in pixels", false, 960, "unsigned int");
-		TCLAP::ValueArg<unsigned int> foldersArg("n", "folders", "Number of folders you'd like to fill", false, 1, "unsigned int");
+		TCLAP::ValueArg<unsigned int> foldersArg("f", "folders", "Number of folders you'd like to fill", false, 1, "unsigned int");
 		vector<string> compressionList;
 		compressionList.push_back("bmp");
 		compressionList.push_back("jpg");
 		TCLAP::ValuesConstraint<string> compressionMethods( compressionList );
 		TCLAP::ValueArg<string> compressionArg("c", "compression", "Type of compression to use", false, "bmp", &compressionMethods);
 
+		vector<string> noiseList;
+		compressionList.push_back("white");
+		compressionList.push_back("gauss");
+		TCLAP::ValuesConstraint<string> noiseFunctions( noiseList );
+		TCLAP::ValueArg<string> noiseArg("n", "noise", "Type of noise to use", false, "white", &noiseFunctions);
+		
+		cmd.add(noiseArg);
 		cmd.add(compressionArg);
+		cmd.add(widthArg);
+		cmd.add(heightArg);
 		cmd.add(foldersArg);
 		cmd.add(heightArg);
 		cmd.add(widthArg);
@@ -75,7 +101,7 @@ int main(int argc, char* args[])
 			Uint8 *ptr;
 			ptr = (Uint8 *)surface->pixels;
 			for(unsigned int k=0; k<surfaceHeight*surface->pitch; k++) {
-				ptr[k] = rand()*255.0/RAND_MAX;
+				ptr[k] = getNoise(k,k,0)*255.0/RAND_MAX;
 			}
 			
 			sprintf(filename,"%.3d/%.3d.%s",i,j,compression.c_str());
