@@ -20,18 +20,16 @@ unsigned int generateSeed();
 void catcher(int sigtype);
 bool write_jpeg_file( char *filename, unsigned int width, unsigned int height, unsigned char* data );
 
-Uint32 getNoise(int x, int y, int type)
+Uint8 getNoise(double x, double y, double z, std::string type)
 {
-	switch(type) {
-		case 0:
-			return rand();
-		case 1:
-			module::Perlin myModule;
-			double value = myModule.GetValue (1.25, 0.75, 0.50);
-			return (Uint32)((value+1)/2.0*0xFFFFFFFF);
-		default:
-			return rand();
+	if(type == "perlin") {
+		module::Perlin myModule;
+		double value = (myModule.GetValue (x, y, z)+1)*127.5;
+		if(value > 255) value = 255;
+		if( value < 0) value = 0;
+		return (Uint8)value;
 	}
+	return rand()*255.0/RAND_MAX;
 }
 
 int main(int argc, char* args[])
@@ -42,6 +40,7 @@ int main(int argc, char* args[])
 	char foldername[32];
 	char filename[32];
 	string compression;
+	string noise;
 
 	signal(SIGINT, catcher);
 	srand(generateSeed());
@@ -59,24 +58,23 @@ int main(int argc, char* args[])
 		TCLAP::ValueArg<string> compressionArg("c", "compression", "Type of compression to use", false, "bmp", &compressionMethods);
 
 		vector<string> noiseList;
-		compressionList.push_back("white");
-		compressionList.push_back("gauss");
+		noiseList.push_back("white");
+		noiseList.push_back("perlin");
 		TCLAP::ValuesConstraint<string> noiseFunctions( noiseList );
 		TCLAP::ValueArg<string> noiseArg("n", "noise", "Type of noise to use", false, "white", &noiseFunctions);
 		
-		cmd.add(noiseArg);
-		cmd.add(compressionArg);
 		cmd.add(widthArg);
 		cmd.add(heightArg);
 		cmd.add(foldersArg);
-		cmd.add(heightArg);
-		cmd.add(widthArg);
+		cmd.add(compressionArg);
+		cmd.add(noiseArg);
 
 		cmd.parse(argc, args);
 		surfaceWidth = widthArg.getValue();
 		surfaceHeight = heightArg.getValue();
 		folderNumber = foldersArg.getValue();
 		compression = compressionArg.getValue();
+		noise = noiseArg.getValue();
 	}
 	catch (TCLAP::ArgException & e)
 	{
@@ -101,7 +99,9 @@ int main(int argc, char* args[])
 			Uint8 *ptr;
 			ptr = (Uint8 *)surface->pixels;
 			for(unsigned int k=0; k<surfaceHeight*surface->pitch; k++) {
-				ptr[k] = getNoise(k,k,0)*255.0/RAND_MAX;
+				ptr[k] = getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1, noise);
+				//ptr[k+1] = ptr[k++];
+				//ptr[k+1] = ptr[k++];
 			}
 			
 			sprintf(filename,"%.3d/%.3d.%s",i,j,compression.c_str());
