@@ -2,35 +2,21 @@
 #include "SDL/SDL_image.h"
 #include <string>
 #include <iostream>
-#include <vector>
 #include <fstream> //read the urandom and random device
-#include <cmath>
 #include <time.h> //use the "second" as seed generator if the random devices do fail
 #include <sys/stat.h> //for create directory
 #include <signal.h> //for ctrl+c to abort
 #include <tclap/CmdLine.h>
 #include <jpeglib.h>
-#include <noise/noise.h>
 #include <unistd.h>
-using namespace noise;
+#include "PerlinNoise.h"
+#include "WhiteNoise.h"
  
 int beenden = 0; //Program flow
 
 unsigned int generateSeed();
 void catcher(int sigtype);
 bool write_jpeg_file( char *filename, unsigned int width, unsigned int height, unsigned char* data );
-
-Uint8 getNoise(double x, double y, double z, std::string type)
-{
-	if(type == "perlin") {
-		module::Perlin myModule;
-		double value = (myModule.GetValue (x, y, z)+1)*127.5;
-		if(value > 255) value = 255;
-		if( value < 0) value = 0;
-		return (Uint8)value;
-	}
-	return rand()*255.0/RAND_MAX;
-}
 
 int main(int argc, char* args[])
 {
@@ -43,7 +29,6 @@ int main(int argc, char* args[])
 	string noise;
 
 	signal(SIGINT, catcher);
-	srand(generateSeed());
 
 	try
 	{
@@ -88,6 +73,17 @@ int main(int argc, char* args[])
 	if (SDL_MUSTLOCK(surface))
 		SDL_LockSurface(surface);
 
+	INoise *mynoise;
+	if( noise == "perlin" ) {
+		mynoise = (INoise*)(new PerlinNoise(generateSeed()));
+	}
+	else if( noise == "white" ) {
+		mynoise = (INoise*)(new WhiteNoise(generateSeed()));
+	}
+	else {
+		return -1;
+	}
+
 	mkdir("output",0755);
 	chdir("output");
 	for(unsigned int i=0; i<folderNumber; i++)
@@ -99,9 +95,9 @@ int main(int argc, char* args[])
 			Uint8 *ptr;
 			ptr = (Uint8 *)surface->pixels;
 			for(unsigned int k=0; k<surfaceHeight*surface->pitch; k++) {
-				ptr[k] = getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1, noise);
-				//ptr[k+1] = ptr[k++];
-				//ptr[k+1] = ptr[k++];
+				ptr[k] = mynoise->getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1); //k++;
+				//ptr[k] = getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1, noise, 2);k++;
+				//ptr[k] = getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1, noise, 3);
 			}
 			
 			sprintf(filename,"%.3d/%.3d.%s",i,j,compression.c_str());
