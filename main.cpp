@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include "PerlinNoise.h"
 #include "WhiteNoise.h"
+#include "NormalNoise.h"
  
 int beenden = 0; //Program flow
 
@@ -45,6 +46,7 @@ int main(int argc, char* args[])
 		vector<string> noiseList;
 		noiseList.push_back("white");
 		noiseList.push_back("perlin");
+		noiseList.push_back("normal");
 		TCLAP::ValuesConstraint<string> noiseFunctions( noiseList );
 		TCLAP::ValueArg<string> noiseArg("n", "noise", "Type of noise to use", false, "white", &noiseFunctions);
 		
@@ -80,6 +82,9 @@ int main(int argc, char* args[])
 	else if( noise == "white" ) {
 		mynoise = (INoise*)(new WhiteNoise(generateSeed()));
 	}
+	else if( noise == "normal" ) {
+		mynoise = (INoise*)(new NormalNoise(generateSeed()));
+	}
 	else {
 		return -1;
 	}
@@ -95,9 +100,7 @@ int main(int argc, char* args[])
 			Uint8 *ptr;
 			ptr = (Uint8 *)surface->pixels;
 			for(unsigned int k=0; k<surfaceHeight*surface->pitch; k++) {
-				ptr[k] = mynoise->getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1); //k++;
-				//ptr[k] = getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1, noise, 2);k++;
-				//ptr[k] = getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1, noise, 3);
+				ptr[k] = mynoise->getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1); 
 			}
 			
 			sprintf(filename,"%.3d/%.3d.%s",i,j,compression.c_str());
