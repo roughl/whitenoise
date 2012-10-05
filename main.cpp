@@ -71,19 +71,29 @@ int main(int argc, char* args[])
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) == -1)
 		return -1;
-	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, surfaceWidth, surfaceHeight, 24, 0xFF0000, 0x00FF00, 0x0000FF, 0);
+
+	// @TODO endian issues
+	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, surfaceWidth, surfaceHeight, 24, 0x0000FF, 0x00FF00, 0xFF0000, 0);
 	if (SDL_MUSTLOCK(surface))
 		SDL_LockSurface(surface);
 
-	INoise *mynoise;
+	INoise *mynoiser;
+	INoise *mynoiseg;
+	INoise *mynoiseb;
 	if( noise == "perlin" ) {
-		mynoise = (INoise*)(new PerlinNoise(generateSeed()));
+		mynoiser = (INoise*)(new PerlinNoise(generateSeed()));
+		mynoiseg = (INoise*)(new PerlinNoise(generateSeed()));
+		mynoiseb = (INoise*)(new PerlinNoise(generateSeed()));
 	}
 	else if( noise == "white" ) {
-		mynoise = (INoise*)(new WhiteNoise(generateSeed()));
+		mynoiser = (INoise*)(new WhiteNoise(generateSeed()));
+		mynoiser = mynoiser;
+		mynoiser = mynoiser;
 	}
 	else if( noise == "normal" ) {
-		mynoise = (INoise*)(new NormalNoise(generateSeed()));
+		mynoiser = (INoise*)(new NormalNoise(generateSeed()));
+		mynoiseg = mynoiser;
+		mynoiseb = mynoiser;
 	}
 	else {
 		return -1;
@@ -99,8 +109,17 @@ int main(int argc, char* args[])
 		{
 			Uint8 *ptr;
 			ptr = (Uint8 *)surface->pixels;
-			for(unsigned int k=0; k<surfaceHeight*surface->pitch; k++) {
-				ptr[k] = mynoise->getNoise(((k/3)%surfaceWidth)/100.0, ((k/3.0)/surfaceWidth)/100.0, (j/100.0)-1); 
+			cout << surfaceWidth << "x" << surfaceHeight << endl;
+			for(unsigned int y=0; y<surfaceHeight; y++) {
+				for(unsigned int x=0; x<surfaceWidth; x++) {
+					int index = (y*surfaceWidth+x)*3;
+					//ptr[index]   = mynoiser->getNoise(x/150.0,y/150.0,(j/100.));
+					//ptr[index+1] = mynoiseg->getNoise(x/150.0,y/150.0,(j/100.));
+					//ptr[index+2] = mynoiseb->getNoise(x/150.0,y/150.0,(j/100.));
+					ptr[index]   = mynoiser->getNoise(x/(j+1.0),y/(j+1.0),(1));
+					ptr[index+1] = mynoiseg->getNoise(x/(j+1.0),y/(j+1.0),(1));
+					ptr[index+2] = mynoiseb->getNoise(x/(j+1.0),y/(j+1.0),(1));
+				}
 			}
 			
 			sprintf(filename,"%.3d/%.3d.%s",i,j,compression.c_str());
@@ -198,7 +217,7 @@ bool write_jpeg_file( char *filename, unsigned int width, unsigned int height, u
 	cinfo.num_components = 3;
 	//cinfo.data_precision = 4;
 	cinfo.dct_method = JDCT_FLOAT;
-	jpeg_set_quality(&cinfo, 15, TRUE);
+	jpeg_set_quality(&cinfo, 100, TRUE);
 	// Now do the compression
 	jpeg_start_compress( &cinfo, TRUE );
 	// like reading a file, this time write one row at a time

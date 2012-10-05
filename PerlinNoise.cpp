@@ -1,10 +1,10 @@
 #include "PerlinNoise.h"
 		
-
 PerlinNoise::PerlinNoise(int seed)
 {
 	myModule.SetSeed(seed);
 }
+
 Uint8 PerlinNoise::getNoise(double x, double y, double z)
 {
 		double value = (myModule.GetValue (x, y, z)+1)*127.5;
