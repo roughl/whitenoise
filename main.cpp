@@ -87,8 +87,8 @@ int main(int argc, char* args[])
 	}
 	else if( noise == "white" ) {
 		mynoiser = (INoise*)(new WhiteNoise(generateSeed()));
-		mynoiser = mynoiser;
-		mynoiser = mynoiser;
+		mynoiseg = mynoiser;
+		mynoiseb = mynoiser;
 	}
 	else if( noise == "normal" ) {
 		mynoiser = (INoise*)(new NormalNoise(generateSeed()));
