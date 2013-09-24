@@ -2,17 +2,17 @@ README
 This Readme is about the whitenoise-pictures-generation-tool by Lucien Buchmann & Co.
 
 OUTPUTFILES
-folder "output" with the desired amount <n> subdirectories which all contain 200 pictures
+folder "output" with the desired amount <f> subdirectories which all contain <p> pictures
 
 MAYBE INTERESTING
 - start the program from console if possible, so you can read the error-messages
 
 USAGE
 ./whitenoise
-./whitenoise -x 200 -y 100 -n 2
+./whitenoise -x 200 -y 100 -f 2 -p 10
 x: width (default: 960)
 y: height (default: 960)
-n: amount of folders (default: 1)
+f: amount of folders (default: 1)
 
 and then:
 ./convert.sh
