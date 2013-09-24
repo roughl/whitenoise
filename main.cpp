@@ -68,7 +68,7 @@ int main(int argc, char* args[])
 	using namespace std;
 	string compression;
 	string noise;
-	unsigned int threads, folderNumber;
+	unsigned int threads, folderNumber, npics;
 
 	signal(SIGINT, catcher);
 
@@ -78,6 +78,7 @@ int main(int argc, char* args[])
 		TCLAP::ValueArg<unsigned int> widthArg("x", "width", "Width in pixels", false, 960, "unsigned int");
 		TCLAP::ValueArg<unsigned int> heightArg("y", "height", "Height in pixels", false, 960, "unsigned int");
 		TCLAP::ValueArg<unsigned int> foldersArg("f", "folders", "Number of folders you'd like to fill", false, 1, "unsigned int");
+		TCLAP::ValueArg<unsigned int> pictureArg("p", "pictures", "Number of pictures per folder you'd like to create", false, 200, "unsigned int");
 		TCLAP::ValueArg<unsigned int> threadsArg("t", "threads", "Number of threads you'd like to use", false, 1, "unsigned int");
 		vector<string> compressionList;
 		compressionList.push_back("bmp");
@@ -95,17 +96,20 @@ int main(int argc, char* args[])
 		cmd.add(widthArg);
 		cmd.add(heightArg);
 		cmd.add(foldersArg);
+		cmd.add(pictureArg);
 		cmd.add(threadsArg);
 		cmd.add(compressionArg);
 		cmd.add(noiseArg);
 
 		cmd.parse(argc, args);
-		surfaceWidth = widthArg.getValue();
+
+		surfaceWidth  = widthArg.getValue();
 		surfaceHeight = heightArg.getValue();
-		folderNumber = foldersArg.getValue();
-		threads = threadsArg.getValue();
-		compression = compressionArg.getValue();
-		noise = noiseArg.getValue();
+		folderNumber  = foldersArg.getValue();
+		threads       = threadsArg.getValue();
+		npics         = pictureArg.getValue();
+		compression   = compressionArg.getValue();
+		noise         = noiseArg.getValue();
 	}
 	catch (TCLAP::ArgException & e)
 	{
@@ -145,11 +149,10 @@ int main(int argc, char* args[])
 		char foldername[32];
 		sprintf(foldername,"%.3d",i);
 		mkdir(foldername,0755);
-		unsigned int npics=200;
 		std::thread ts[threads];
 		for(unsigned int t=0; t<threads; t++) {
-			printf("%i,%i\n", npics/threads*t, npics/threads*(t+1));
-			ts[t] = std::thread(generate_pictures, i, compression, mynoiser, mynoiseg, mynoiseb, npics/threads*t, npics/threads*(t+1));
+			printf("%i,%i\n", npics*t/threads, npics*(t+1)/threads);
+			ts[t] = std::thread(generate_pictures, i, compression, mynoiser, mynoiseg, mynoiseb, npics*t/threads, npics*(t+1)/threads);
 		}
 		for(unsigned int t=0; t<threads; t++) {
 			ts[t].join();
