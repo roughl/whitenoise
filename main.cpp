@@ -2,6 +2,7 @@
 #include "SDL/SDL_image.h"
 #include <string>
 #include <iostream>
+#include <thread>
 #include <fstream> //read the urandom and random device
 #include <time.h> //use the "second" as seed generator if the random devices do fail
 #include <sys/stat.h> //for create directory
@@ -19,15 +20,55 @@ unsigned int generateSeed();
 void catcher(int sigtype);
 bool write_jpeg_file( char *filename, unsigned int width, unsigned int height, unsigned char* data );
 
+unsigned int surfaceWidth, surfaceHeight;
+
+void generate_pictures(unsigned int folder, std::string compression,
+		INoise *mynoiser, INoise *mynoiseg, INoise *mynoiseb, unsigned int start, unsigned int stop) {
+
+	SDL_Surface *surface = NULL;
+	// @TODO endian issues
+	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, surfaceWidth, surfaceHeight, 24, 0x0000FF, 0x00FF00, 0xFF0000, 0);
+	if (SDL_MUSTLOCK(surface))
+		SDL_LockSurface(surface);
+	for(unsigned int j=start; j<stop; j++)
+	{
+		Uint8 *ptr;
+		ptr = (Uint8 *)surface->pixels;
+		//cout << "\r " << j+1 << "/" <<200<<std::flush;
+		for(unsigned int y=0; y<surfaceHeight; y++) {
+			for(unsigned int x=0; x<surfaceWidth; x++) {
+				int index = (y*surfaceWidth+x)*3;
+				//ptr[index]   = mynoiser->getNoise(x/150.0,y/150.0,(j/100.));
+				//ptr[index+1] = mynoiseg->getNoise(x/150.0,y/150.0,(j/100.));
+				//ptr[index+2] = mynoiseb->getNoise(x/150.0,y/150.0,(j/100.));
+				ptr[index]   = mynoiser->getNoise(x/(j+1.0),y/(j+1.0),(1));
+				ptr[index+1] = mynoiseg->getNoise(x/(j+1.0),y/(j+1.0),(1));
+				ptr[index+2] = mynoiseb->getNoise(x/(j+1.0),y/(j+1.0),(1));
+			}
+		}
+
+		char filename[32];
+		sprintf(filename,"%.3d/%.3d.%s",folder,j,compression.c_str());
+		if(compression == "bmp")
+			SDL_SaveBMP(surface, filename);
+		else if(compression == "jpg")
+			write_jpeg_file( filename, surface->w, surface->h, (unsigned char*)surface->pixels);
+
+		if (beenden==1)
+			break;
+	}
+	if (SDL_MUSTLOCK(surface))
+		SDL_UnlockSurface(surface);
+	SDL_FreeSurface(surface);
+}
+
+
 int main(int argc, char* args[])
 {
 	using namespace std;
-	unsigned int surfaceWidth, surfaceHeight, folderNumber;
-	SDL_Surface *surface = NULL;
-	char foldername[32];
-	char filename[32];
 	string compression;
 	string noise;
+	unsigned int threads, folderNumber;
 
 	signal(SIGINT, catcher);
 
@@ -37,6 +78,7 @@ int main(int argc, char* args[])
 		TCLAP::ValueArg<unsigned int> widthArg("x", "width", "Width in pixels", false, 960, "unsigned int");
 		TCLAP::ValueArg<unsigned int> heightArg("y", "height", "Height in pixels", false, 960, "unsigned int");
 		TCLAP::ValueArg<unsigned int> foldersArg("f", "folders", "Number of folders you'd like to fill", false, 1, "unsigned int");
+		TCLAP::ValueArg<unsigned int> threadsArg("t", "threads", "Number of threads you'd like to use", false, 1, "unsigned int");
 		vector<string> compressionList;
 		compressionList.push_back("bmp");
 		compressionList.push_back("jpg");
@@ -53,6 +95,7 @@ int main(int argc, char* args[])
 		cmd.add(widthArg);
 		cmd.add(heightArg);
 		cmd.add(foldersArg);
+		cmd.add(threadsArg);
 		cmd.add(compressionArg);
 		cmd.add(noiseArg);
 
@@ -60,6 +103,7 @@ int main(int argc, char* args[])
 		surfaceWidth = widthArg.getValue();
 		surfaceHeight = heightArg.getValue();
 		folderNumber = foldersArg.getValue();
+		threads = threadsArg.getValue();
 		compression = compressionArg.getValue();
 		noise = noiseArg.getValue();
 	}
@@ -71,11 +115,6 @@ int main(int argc, char* args[])
 
 	if(SDL_Init(SDL_INIT_EVERYTHING) == -1)
 		return -1;
-
-	// @TODO endian issues
-	surface = SDL_CreateRGBSurface(SDL_SWSURFACE, surfaceWidth, surfaceHeight, 24, 0x0000FF, 0x00FF00, 0xFF0000, 0);
-	if (SDL_MUSTLOCK(surface))
-		SDL_LockSurface(surface);
 
 	INoise *mynoiser;
 	INoise *mynoiseg;
@@ -103,43 +142,23 @@ int main(int argc, char* args[])
 	chdir("output");
 	for(unsigned int i=0; i<folderNumber; i++)
 	{
+		char foldername[32];
 		sprintf(foldername,"%.3d",i);
 		mkdir(foldername,0755);
-		for(unsigned int j=0; j<200; j++)
-		{
-			Uint8 *ptr;
-			ptr = (Uint8 *)surface->pixels;
-			cout << surfaceWidth << "x" << surfaceHeight << endl;
-			for(unsigned int y=0; y<surfaceHeight; y++) {
-				for(unsigned int x=0; x<surfaceWidth; x++) {
-					int index = (y*surfaceWidth+x)*3;
-					//ptr[index]   = mynoiser->getNoise(x/150.0,y/150.0,(j/100.));
-					//ptr[index+1] = mynoiseg->getNoise(x/150.0,y/150.0,(j/100.));
-					//ptr[index+2] = mynoiseb->getNoise(x/150.0,y/150.0,(j/100.));
-					ptr[index]   = mynoiser->getNoise(x/(j+1.0),y/(j+1.0),(1));
-					ptr[index+1] = mynoiseg->getNoise(x/(j+1.0),y/(j+1.0),(1));
-					ptr[index+2] = mynoiseb->getNoise(x/(j+1.0),y/(j+1.0),(1));
-				}
-			}
-			
-			sprintf(filename,"%.3d/%.3d.%s",i,j,compression.c_str());
-			if(compression == "bmp")
-				SDL_SaveBMP(surface, filename);
-			else if(compression == "jpg")
-				write_jpeg_file( filename, surface->w, surface->h, (unsigned char*)surface->pixels);
-
-			if (beenden==1)
-				break;
+		unsigned int npics=200;
+		std::thread ts[threads];
+		for(unsigned int t=0; t<threads; t++) {
+			printf("%i,%i\n", npics/threads*t, npics/threads*(t+1));
+			ts[t] = std::thread(generate_pictures, i, compression, mynoiser, mynoiseg, mynoiseb, npics/threads*t, npics/threads*(t+1));
+		}
+		for(unsigned int t=0; t<threads; t++) {
+			ts[t].join();
 		}
 		if (beenden==1)
 			break;
 	}
 
-	if (SDL_MUSTLOCK(surface))
-		SDL_UnlockSurface(surface);
-	SDL_FreeSurface(surface);
 	SDL_Quit();
-	return 0;
 }
 
 unsigned int generateSeed()
