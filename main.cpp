@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <thread>
+#include <memory>
 #include <fstream> //read the urandom and random device
 #include <time.h> //use the "second" as seed generator if the random devices do fail
 #include <sys/stat.h> //for create directory
@@ -217,7 +218,8 @@ bool write_jpeg_file( char *filename, unsigned int width, unsigned int height, u
 
 	// this is a pointer to one row of image data
 	JSAMPROW row_pointer[1];
-	FILE *outfile = fopen( filename, "wb" );
+
+	std::unique_ptr<FILE, int (*)(FILE *)> outfile(fopen(filename, "wb"), fclose);
 
 	if ( !outfile )
 	{
@@ -226,7 +228,7 @@ bool write_jpeg_file( char *filename, unsigned int width, unsigned int height, u
 	}
 	cinfo.err = jpeg_std_error( &jerr );
 	jpeg_create_compress(&cinfo);
-	jpeg_stdio_dest(&cinfo, outfile);
+	jpeg_stdio_dest(&cinfo, outfile.get());
 
 	// Setting the parameters of the output file here
 	cinfo.image_width = width;
@@ -251,7 +253,6 @@ bool write_jpeg_file( char *filename, unsigned int width, unsigned int height, u
 	// similar to read file, clean up after we're done compressing
 	jpeg_finish_compress( &cinfo );
 	jpeg_destroy_compress( &cinfo );
-	fclose( outfile );
 	
 	return true;
 }
